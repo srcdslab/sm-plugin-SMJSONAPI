@@ -102,7 +102,7 @@ request:
 {
     "method": "function",
     "function": "KickClient",
-    "parameters": [
+    "args": [
         1,
         "%d hello %s",
         1337,
@@ -112,15 +112,15 @@ request:
 
 Other examples:
 
-{ "method": "function", "function": "PrintToServer", "parameters": ["1: %s, 2: %d, 3: %s, 4: %d", "1test1", [2222], "3test3", [4444]] }
+{ "method": "function", "function": "PrintToServer", "args": ["1: %s, 2: %d, 3: %s, 4: %d", "1test1", [2222], "3test3", [4444]] }
 
-{ "method": "function", "function": "TeleportEntity", "parameters": [1, [206.472443, 2418.516357, -62.058395], [26.994024, -14.119852, 0.000000], [["NULL_VECTOR"]] ] }
+{ "method": "function", "function": "TeleportEntity", "args": [1, [206.472443, 2418.516357, -62.058395], [26.994024, -14.119852, 0.000000], [["NULL_VECTOR"]] ] }
 
-{ "method": "function", "function": "GetClientName", "parameters": [ 1, "", 1024 ] }
+{ "method": "function", "function": "GetClientName", "args": [ 1, "", 1024 ] }
 
-{ "method": "function", "function": "GetClientAbsOrigin", "parameters": [ 1, [0.0,0,0] ] }
+{ "method": "function", "function": "GetClientAbsOrigin", "args": [ 1, [0.0,0,0] ] }
 
-{ "method": "function", "function": "ServerCommandEx", "parameters": [ "", 1024, "echo hello mates %d %f %s", [123], [123.456], "test" ] }
+{ "method": "function", "function": "ServerCommandEx", "args": [ "", 1024, "echo hello mates %d %f %s", [123], [123.456], "test" ] }
 
 { "method": "subscribe", "module": "gameevents", "events": [ "player_say" ] }
 
