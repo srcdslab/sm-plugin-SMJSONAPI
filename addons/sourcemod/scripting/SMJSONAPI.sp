@@ -4,7 +4,7 @@
 
 #include <sourcemod>
 #include <AsyncSocket>
-#include <smjansson>
+#include <ripext>
 
 #define MAX_CLIENTS 16
 
@@ -105,7 +105,8 @@ static void OnAsyncData(AsyncSocket socket, const char[] data, const int size)
 	int iLine;
 	int iColumn;
 	static char sError[256];
-	JSONValue jRequest = json_load_ex(data, sError, sizeof(sError), iLine, iColumn);
+
+	JSONObject jRequest = JSONObject.FromString(data);
 
 	if(jRequest == null)
 	{
@@ -126,7 +127,7 @@ static void OnAsyncData(AsyncSocket socket, const char[] data, const int size)
 		return;
 	}
 
-	if(jRequest.IsObject)
+	if(jRequest.Size)
 	{
 		//view_as<JSONObject>(jRequest).DumpToServer();
 		JSONObject jResponse = new JSONObject();
@@ -148,7 +149,7 @@ static void OnAsyncData(AsyncSocket socket, const char[] data, const int size)
 static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 {
 	static char sMethod[32];
-	if(jRequest.GetString("method", sMethod, sizeof(sMethod)) < 0)
+	if(jRequest.GetString("method", sMethod, sizeof(sMethod)) == false)
 	{
 		JSONObject jError = new JSONObject();
 		jError.SetString("error", "Request has no 'method' string-value.");
@@ -180,7 +181,7 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 	else if(StrEqual(sMethod, "function"))
 	{
 		static char sFunction[64];
-		if(jRequest.GetString("function", sFunction, sizeof(sFunction)) < 0)
+		if(jRequest.GetString("function", sFunction, sizeof(sFunction)) == false)
 		{
 			JSONObject jError = new JSONObject();
 			jError.SetString("error", "Request has no 'function' string-value.");
@@ -209,7 +210,7 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 			Call_StartFunction(INVALID_HANDLE, Fun);
 
 		JSONArray jArgsArray = view_as<JSONArray>(jRequest.Get("args"));
-		if(jArgsArray == null || !jArgsArray.IsArray)
+		if(jArgsArray == null || !jArgsArray.Length)
 		{
 			delete jArgsArray;
 			Call_Cancel();
@@ -231,47 +232,39 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 		for(int i = 0; i < jArgsArray.Length; i++)
 		{
 			bool Fail = false;
-			JSONValue jValue;
-			jValue = jArgsArray.Get(i);
 
-			char sType1[32];
-			jValue.TypeToString(sType1, sizeof(sType1));
+			JSONType jType = jArgsArray.GetType(i);
+			JSON jValue = jArgsArray.Get(i);
 
-			if(jValue.IsArray)
+			if(jType == JSON_ARRAY)
 			{
 				JSONArray jValueArray = view_as<JSONArray>(jValue);
-				JSONValue jArrayValue = jValueArray.Get(0);
+				JSONType jTypeArray = jValueArray.GetType(0);
+				JSON jArrayValue = jValueArray.Get(0);
 
-				char sType2[32];
-				jArrayValue.TypeToString(sType2, sizeof(sType2));
-
-				if(jArrayValue.IsInteger || jArrayValue.IsBoolean)
+				if(jTypeArray == JSON_INTEGER || jTypeArray == JSON_TRUE || jTypeArray == JSON_FALSE)
 				{
 					int iValues_ = iValues;
 					for(int j = 0; j < jValueArray.Length; j++)
 					{
-						JSONInteger jInteger = view_as<JSONInteger>(jValueArray.Get(j));
-						aiValues[iValues_++] = jInteger.Value;
-						delete jInteger;
+						aiValues[iValues_++] = jValueArray.GetInt(j);
 					}
 
 					Call_PushArrayEx(aiValues[iValues], jValueArray.Length, SM_PARAM_COPYBACK);
 					iValues += jValueArray.Length;
 				}
-				else if(jArrayValue.IsFloat)
+				else if(jTypeArray == JSON_REAL)
 				{
 					int fValues_ = fValues;
 					for(int j = 0; j < jValueArray.Length; j++)
 					{
-						JSONFloat jFloat = view_as<JSONFloat>(jValueArray.Get(j));
-						afValues[fValues_++] = jFloat.Value;
-						delete jFloat;
+						afValues[fValues_++] = jValueArray.GetFloat(j);
 					}
 
 					Call_PushArrayEx(afValues[fValues], jValueArray.Length, SM_PARAM_COPYBACK);
 					fValues += jValueArray.Length;
 				}
-				/*else if(jArrayValue.IsString)
+				/*else if(jTypeArray == JSON_STRING)
 				{
 					int sValues_ = sValues;
 					for(int j = 0; j < jValueArray.Length; j++)
@@ -284,7 +277,7 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 					Call_PushArrayEx(view_as<int>(asValues[sValues]), jValueArray.Length, SM_PARAM_COPYBACK);
 					sValues += jValueArray.Length;
 				}*/
-				else if(jArrayValue.IsArray) // Special
+				else if(jTypeArray == JSON_ARRAY) // Special
 				{
 					static char sSpecial[32];
 					view_as<JSONArray>(jArrayValue).GetString(0, sSpecial, sizeof(sSpecial));
@@ -303,37 +296,34 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 				{
 					Call_Cancel();
 					delete jArrayValue;
+					delete jValueArray;
 					delete jValue;
 					delete jArgsArray;
 
-					static char sType[16];
-					jValue.TypeToString(sType, sizeof(sType));
-
 					char sError[128];
-					FormatEx(sError, sizeof(sError), "Unsupported parameter in list %d of type '%s'", i, sType);
+					FormatEx(sError, sizeof(sError), "Unsupported parameter in list %d of type '%d'", i, jTypeArray);
 
 					JSONObject jError = new JSONObject();
 					jError.SetString("error", sError);
 					jResponse.Set("error", jError);
 					return -1;
 				}
-				delete jArrayValue;
+				delete jValueArray;
+				delete jValueArray;
 			}
-			else if(jValue.IsInteger || jValue.IsBoolean)
+			else if(jType == JSON_INTEGER || jType == JSON_TRUE || jType == JSON_FALSE)
 			{
-				aiValues[iValues] = view_as<JSONInteger>(jValue).Value;
+				aiValues[iValues] = jArgsArray.GetInt(i);
 				Call_PushCell(aiValues[iValues++]);
 			}
-			else if(jValue.IsFloat)
+			else if(jType == JSON_REAL)
 			{
-				afValues[fValues] = view_as<JSONFloat>(jValue).Value;
+				afValues[fValues] = jArgsArray.GetFloat(i);
 				Call_PushFloat(afValues[fValues++]);
 			}
-			else if(jValue.IsString)
+			else if(jType == JSON_STRING)
 			{
-				// Broken: view_as<JSONString>(jValue).GetString(asValues[sValues], sizeof(asValues[]));
-				JSONString jString = view_as<JSONString>(jValue);
-				jString.GetString(asValues[sValues], sizeof(asValues[]));
+				jArgsArray.GetString(i, asValues[sValues], sizeof(asValues[]));
 				Call_PushStringEx(asValues[sValues++], sizeof(asValues[]), SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
 			}
 			else
@@ -342,11 +332,8 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 				delete jValue;
 				delete jArgsArray;
 
-				static char sType[16];
-				jValue.TypeToString(sType, sizeof(sType));
-
 				char sError[128];
-				FormatEx(sError, sizeof(sError), "Unsupported parameter %d of type '%s'", i, sType);
+				FormatEx(sError, sizeof(sError), "Unsupported parameter %d of type '%d'", i, jType);
 
 				JSONObject jError = new JSONObject();
 				jError.SetString("error", sError);
@@ -379,50 +366,51 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 
 		for(int i = 0; i < jArgsArray.Length; i++)
 		{
-			JSONValue jValue;
-			jValue = jArgsArray.Get(i);
+			JSONType jType = jArgsArray.GetType(i);
+			JSONObject jValue = view_as<JSONObject>(jArgsArray.Get(i));
 
-			if(jValue.IsArray)
+			if(jType == JSON_ARRAY)
 			{
 				JSONArray jArrayResponse = new JSONArray();
 				JSONArray jValueArray = view_as<JSONArray>(jValue);
-				JSONValue jArrayValue = jValueArray.Get(0);
+				JSONType jTypeArray = jValueArray.GetType(0);
+				JSONObject jArrayValue = view_as<JSONObject>(jValueArray.Get(0));
 
-				if(jArrayValue.IsInteger || jArrayValue.IsBoolean)
+				if(jTypeArray == JSON_INTEGER || jTypeArray == JSON_TRUE || jTypeArray == JSON_FALSE)
 				{
 					for(int j = 0; j < jValueArray.Length; j++)
-						jArrayResponse.AppendInt(aiValues[iValues++]);
+						jArrayResponse.PushInt(aiValues[iValues++]);
 				}
-				else if(jArrayValue.IsFloat)
+				else if(jTypeArray == JSON_REAL)
 				{
 					for(int j = 0; j < jValueArray.Length; j++)
-						jArrayResponse.AppendFloat(afValues[fValues++]);
+						jArrayResponse.PushFloat(afValues[fValues++]);
 				}
-				else if(jArrayValue.IsString)
+				else if(jTypeArray == JSON_STRING)
 				{
 					for(int j = 0; j < jValueArray.Length; j++)
-						jArrayResponse.AppendString(asValues[sValues++]);
+						jArrayResponse.PushString(asValues[sValues++]);
 				}
-				else if(jArrayValue.IsArray) // Special
+				else if(jTypeArray == JSON_ARRAY) // Special
 				{
 					static char sSpecial[32];
 					view_as<JSONArray>(jArrayValue).GetString(0, sSpecial, sizeof(sSpecial));
-					jArrayResponse.AppendString(sSpecial);
+					jArrayResponse.PushString(sSpecial);
 				}
 				delete jArrayValue;
-				jArgsResponse.Append(jArrayResponse);
+				jArgsResponse.Push(jArrayResponse);
 			}
-			else if(jValue.IsInteger || jValue.IsBoolean)
+			else if(jType == JSON_INTEGER || jType == JSON_TRUE || jType == JSON_FALSE)
 			{
-				jArgsResponse.AppendInt(aiValues[iValues++]);
+				jArgsResponse.PushInt(aiValues[iValues++]);
 			}
-			else if(jValue.IsFloat)
+			else if(jType == JSON_REAL)
 			{
-				jArgsResponse.AppendFloat(afValues[fValues++]);
+				jArgsResponse.PushFloat(afValues[fValues++]);
 			}
-			else if(jValue.IsString)
+			else if(jType == JSON_STRING)
 			{
-				jArgsResponse.AppendString(asValues[sValues++]);
+				jArgsResponse.PushString(asValues[sValues++]);
 			}
 			delete jValue;
 		}

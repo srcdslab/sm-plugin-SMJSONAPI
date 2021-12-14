@@ -70,7 +70,7 @@ int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
 	Request.GetString("method", sMethod, sizeof(sMethod));
 
 	static char sModule[32];
-	if(Request.GetString("module", sModule, sizeof(sModule)) < 0)
+	if(Request.GetString("module", sModule, sizeof(sModule)) == false)
 	{
 		JSONObject jError = new JSONObject();
 		jError.SetString("error", "Request has no 'module' string-value.");
@@ -82,7 +82,7 @@ int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
 	if(StrEqual(sModule, "gameevents"))
 	{
 		JSONArray EventArray = view_as<JSONArray>(Request.Get("events"));
-		if(EventArray == null || !EventArray.IsArray)
+		if(EventArray == null || !EventArray.Length)
 		{
 			delete EventArray;
 			JSONObject jError = new JSONObject();
@@ -104,11 +104,11 @@ int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
 		for(int i = 0; i < EventArray.Length; i++)
 		{
 			static char sEventName[32];
-			if(EventArray.GetString(i, sEventName, sizeof(sEventName)) < 0)
+			if(EventArray.GetString(i, sEventName, sizeof(sEventName)) == false)
 			{
 				JSONObject jError = new JSONObject();
 				jError.SetString("error", "not a string-value");
-				EventArrayResponse.Append(jError);
+				EventArrayResponse.Push(jError);
 				continue;
 			}
 
@@ -120,7 +120,7 @@ int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
 			else if(Method == 3)
 				Res = Subscribe_GameEvents_Replay(Index, sEventName);
 
-			EventArrayResponse.AppendInt(Res);
+			EventArrayResponse.PushInt(Res);
 		}
 		delete EventArray;
 
@@ -130,7 +130,7 @@ int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
 	else if(StrEqual(sModule, "forwards"))
 	{
 		JSONArray EventArray = view_as<JSONArray>(Request.Get("events"));
-		if(EventArray == null || !EventArray.IsArray)
+		if(EventArray == null || !EventArray.Length)
 		{
 			delete EventArray;
 			JSONObject jError = new JSONObject();
@@ -152,11 +152,11 @@ int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
 		for(int i = 0; i < EventArray.Length; i++)
 		{
 			static char sEventName[32];
-			if(EventArray.GetString(i, sEventName, sizeof(sEventName)) < 0)
+			if(EventArray.GetString(i, sEventName, sizeof(sEventName)) == false)
 			{
 				JSONObject jError = new JSONObject();
 				jError.SetString("error", "not a string-value");
-				EventArrayResponse.Append(jError);
+				EventArrayResponse.Push(jError);
 				continue;
 			}
 
@@ -168,7 +168,7 @@ int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
 			else if(Method == 3)
 				Res = Subscribe_Forwards_Replay(Index, sEventName);
 
-			EventArrayResponse.AppendInt(Res);
+			EventArrayResponse.PushInt(Res);
 		}
 		delete EventArray;
 
