@@ -17,7 +17,7 @@ static int g_Subscriber_Client[MAX_SUBSCRIBERS] = { -1, ... };
 static ArrayList g_Subscriber_GameEvents[MAX_SUBSCRIBERS];
 static ArrayList g_Subscriber_Forwards[MAX_SUBSCRIBERS];
 
-bool Subscribe_OnPluginStart()
+void Subscribe_OnPluginStart()
 {
 	GameEvents_Init();
 }
