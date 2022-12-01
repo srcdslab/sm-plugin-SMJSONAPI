@@ -24,7 +24,7 @@ public Plugin myinfo =
 	name = "SM JSON API",
 	author = "BotoX",
 	description = "SourceMod TCP JSON API",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = ""
 }
 
@@ -196,7 +196,10 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 		Function Fun = GetFunctionByName(INVALID_HANDLE, sAPIFunction);
 		if(Fun == INVALID_FUNCTION)
 		{
-			int Res = Call_StartNative(sFunction);
+			int Res = 0;
+			#if defined Call_StartNative
+			Res = Call_StartNative(sFunction);
+			#endif
 			if(!Res)
 			{
 				JSONObject jError = new JSONObject();
@@ -344,8 +347,12 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 		}
 
 		int Result;
-		static char sException[1024];
+		char sException[1024] = "Failed to execute function";
+		#if defined Call_FinishEx
 		int Error = Call_FinishEx(Result, sException, sizeof(sException));
+		#else
+		int Error = Call_Finish(Result);
+		#endif
 
 		if(Error != SP_ERROR_NONE)
 		{
