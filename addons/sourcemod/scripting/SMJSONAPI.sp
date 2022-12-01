@@ -24,7 +24,7 @@ public Plugin myinfo =
 	name = "SM JSON API",
 	author = "BotoX",
 	description = "SourceMod TCP JSON API",
-	version = "1.0.1",
+	version = "1.0.2",
 	url = ""
 }
 
@@ -193,7 +193,16 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 		static char sAPIFunction[64];
 		Format(sAPIFunction, sizeof(sAPIFunction), "API_%s", sFunction);
 
-		Function Fun = GetFunctionByName(INVALID_HANDLE, sAPIFunction);
+		Function Fun = INVALID_FUNCTION;
+		Handle hPluginIterator = GetPluginIterator();
+		while (MorePlugins(hPluginIterator))
+		{
+			Handle hPlugin = ReadPlugin(hPluginIterator);
+			Fun = GetFunctionByName(hPlugin, sAPIFunction);
+			if (Fun != INVALID_FUNCTION)
+				break;
+		}
+
 		if(Fun == INVALID_FUNCTION)
 		{
 			int Res = 0;
