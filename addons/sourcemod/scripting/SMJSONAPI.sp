@@ -5,6 +5,7 @@
 #include <sourcemod>
 #include <AsyncSocket>
 #include <ripext>
+#include <multicolors>
 
 #define MAX_CLIENTS 16
 
@@ -194,13 +195,19 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 		Format(sAPIFunction, sizeof(sAPIFunction), "API_%s", sFunction);
 
 		Function Fun = INVALID_FUNCTION;
-		Handle hPluginIterator = GetPluginIterator();
-		while (MorePlugins(hPluginIterator))
+		Handle FunPlugin = INVALID_HANDLE;
+
+		Fun = GetFunctionByName(FunPlugin, sAPIFunction);
+		if (Fun == INVALID_FUNCTION)
 		{
-			Handle hPlugin = ReadPlugin(hPluginIterator);
-			Fun = GetFunctionByName(hPlugin, sAPIFunction);
-			if (Fun != INVALID_FUNCTION)
-				break;
+			Handle hPluginIterator = GetPluginIterator();
+			while (MorePlugins(hPluginIterator))
+			{
+				FunPlugin = ReadPlugin(hPluginIterator);
+				Fun = GetFunctionByName(FunPlugin, sFunction);
+				if (Fun != INVALID_FUNCTION)
+					break;
+			}
 		}
 
 		if(Fun == INVALID_FUNCTION)
@@ -219,7 +226,7 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 			}
 		}
 		else
-			Call_StartFunction(INVALID_HANDLE, Fun);
+			Call_StartFunction(FunPlugin, Fun);
 
 		JSONArray jArgsArray = view_as<JSONArray>(jRequest.Get("args"));
 		if(jArgsArray == null || !jArgsArray.Length)
