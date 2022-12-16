@@ -12,7 +12,7 @@
 #include "API.inc"
 #include "Subscribe.inc"
 
-static AsyncSocket g_ServerSocket;
+static AsyncSocket g_ServerSocket = null;
 
 static AsyncSocket g_Client_Socket[MAX_CLIENTS] = { null, ... };
 static int g_Client_Subscriber[MAX_CLIENTS] = { -1, ... };
@@ -23,9 +23,9 @@ ConVar g_ListenPort;
 public Plugin myinfo =
 {
 	name = "SM JSON API",
-	author = "BotoX",
+	author = "BotoX, maxime1907",
 	description = "SourceMod TCP JSON API",
-	version = "1.0.2",
+	version = "1.0.3",
 	url = ""
 }
 
@@ -41,7 +41,7 @@ public void OnPluginStart()
 
 public void OnConfigsExecuted()
 {
-	if(g_ServerSocket)
+	if (g_ServerSocket)
 		return;
 
 	g_ServerSocket = new AsyncSocket();
@@ -311,11 +311,12 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 				else
 					Fail = true;
 
+				delete jArrayValue;
+				delete jValueArray;
+
 				if(Fail)
 				{
 					Call_Cancel();
-					delete jArrayValue;
-					delete jValueArray;
 					delete jValue;
 					delete jArgsArray;
 
@@ -327,8 +328,6 @@ static int HandleRequest(int Client, JSONObject jRequest, JSONObject jResponse)
 					jResponse.Set("error", jError);
 					return -1;
 				}
-				delete jValueArray;
-				delete jValueArray;
 			}
 			else if(jType == JSON_INTEGER || jType == JSON_TRUE || jType == JSON_FALSE)
 			{
