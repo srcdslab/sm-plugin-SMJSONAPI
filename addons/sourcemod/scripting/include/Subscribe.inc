@@ -51,7 +51,7 @@ int Subscriber_Destroy(int Index)
 
 	for(int i = 0; i < g_Subscriber_GameEvents[Index].Length; i++)
 	{
-		static char sEventName[32];
+		char sEventName[32];
 		g_Subscriber_GameEvents[Index].GetString(i, sEventName, sizeof(sEventName));
 		GameEvents_Unhook(sEventName);
 	}
@@ -64,30 +64,29 @@ int Subscriber_Destroy(int Index)
 	return 0;
 }
 
-int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
+int Subscriber_HandleRequest(int Index, Request request, Response response)
 {
-	static char sMethod[32];
-	Request.GetString("method", sMethod, sizeof(sMethod));
+	char sMethod[32];
+	request.GetMethod(sMethod, sizeof(sMethod));
 
-	static char sModule[32];
-	if(Request.GetString("module", sModule, sizeof(sModule)) == false)
+	char sModule[32];
+	if(request.GetModule(sModule, sizeof(sModule)) == false)
 	{
 		JSONObject jError = new JSONObject();
 		jError.SetString("error", "Request has no 'module' string-value.");
-		Response.Set("error", jError);
+		response.error = jError;
 		return -1;
 	}
-	Response.SetString("module", sModule);
+	response.SetModule(sModule);
 
 	if(StrEqual(sModule, "gameevents"))
 	{
-		JSONArray EventArray = view_as<JSONArray>(Request.Get("events"));
+		JSONArray EventArray = request.events;
 		if(EventArray == null || !EventArray.Length)
 		{
-			delete EventArray;
 			JSONObject jError = new JSONObject();
 			jError.SetString("error", "Request has no 'events' array-value.");
-			Response.Set("error", jError);
+			response.error = jError;
 			return -1;
 		}
 
@@ -103,7 +102,7 @@ int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
 
 		for(int i = 0; i < EventArray.Length; i++)
 		{
-			static char sEventName[32];
+			char sEventName[32];
 			if(EventArray.GetString(i, sEventName, sizeof(sEventName)) == false)
 			{
 				JSONObject jError = new JSONObject();
@@ -122,20 +121,18 @@ int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
 
 			EventArrayResponse.PushInt(Res);
 		}
-		delete EventArray;
 
-		Response.Set("events", EventArrayResponse);
+		response.events = EventArrayResponse;
 		return 0;
 	}
 	else if(StrEqual(sModule, "forwards"))
 	{
-		JSONArray EventArray = view_as<JSONArray>(Request.Get("events"));
-		if(EventArray == null || !EventArray.Length)
+		JSONArray EventArray = request.events;
+		if (EventArray == null || !EventArray.Length)
 		{
-			delete EventArray;
 			JSONObject jError = new JSONObject();
 			jError.SetString("error", "Request has no 'events' array-value.");
-			Response.Set("error", jError);
+			response.error = jError;
 			return -1;
 		}
 
@@ -151,7 +148,7 @@ int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
 
 		for(int i = 0; i < EventArray.Length; i++)
 		{
-			static char sEventName[32];
+			char sEventName[32];
 			if(EventArray.GetString(i, sEventName, sizeof(sEventName)) == false)
 			{
 				JSONObject jError = new JSONObject();
@@ -170,15 +167,14 @@ int Subscriber_HandleRequest(int Index, JSONObject Request, JSONObject Response)
 
 			EventArrayResponse.PushInt(Res);
 		}
-		delete EventArray;
 
-		Response.Set("events", EventArrayResponse);
+		response.events = EventArrayResponse;
 		return 0;
 	}
 
 	JSONObject jError = new JSONObject();
 	jError.SetString("error", "No handler found for requested module.");
-	Response.Set("error", jError);
+	response.error = jError;
 	return -1;
 }
 
@@ -302,6 +298,8 @@ static int Subscribe_GameEvents_FakePublish(int Index, const char[] sEventName, 
 	jPublish.Set("event", jEvent);
 
 	PublishEvent(g_Subscriber_Client[Index], jPublish);
+
+	delete jEvent;
 	delete jPublish;
 
 	return 0;
@@ -325,6 +323,7 @@ void Subscribe_GameEvents_Publish(const char[] sEventName, JSONObject jEvent)
 		PublishEvent(g_Subscriber_Client[Index], jPublish);
 	}
 
+	delete jEvent;
 	delete jPublish;
 }
 /* GameEvents */
@@ -408,6 +407,9 @@ static int Subscribe_Forwards_FakePublish(int Index, const char[] sEventName, JS
 	jPublish.Set("event", jEvent);
 
 	PublishEvent(g_Subscriber_Client[Index], jPublish);
+
+	delete jEventData;
+	delete jEvent;
 	delete jPublish;
 
 	return 0;
@@ -431,6 +433,7 @@ void Subscribe_Forwards_Publish(const char[] sEventName, JSONObject jEvent)
 		PublishEvent(g_Subscriber_Client[Index], jPublish);
 	}
 
+	delete jEvent;
 	delete jPublish;
 }
 /* Forwards */
