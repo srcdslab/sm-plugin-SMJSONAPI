@@ -28,7 +28,7 @@ public Plugin myinfo =
 	name = "SM JSON API",
 	author = "BotoX, maxime1907",
 	description = "SourceMod TCP JSON API",
-	version = "1.0.4",
+	version = "1.0.5",
 	url = ""
 }
 

@@ -99,15 +99,16 @@ int Subscriber_HandleRequest(int Index, Request request, Response response)
 			Method = 3;
 
 		JSONArray EventArrayResponse = new JSONArray();
+		JSONObject jError = null;
 
 		for(int i = 0; i < EventArray.Length; i++)
 		{
 			char sEventName[32];
 			if(EventArray.GetString(i, sEventName, sizeof(sEventName)) == false)
 			{
-				JSONObject jError = new JSONObject();
-				jError.SetString("error", "not a string-value");
-				EventArrayResponse.Push(jError);
+				if (jError == null)
+					jError = new JSONObject();
+				jError.SetString("error", "Event is not a string-value");
 				continue;
 			}
 
@@ -122,6 +123,7 @@ int Subscriber_HandleRequest(int Index, Request request, Response response)
 			EventArrayResponse.PushInt(Res);
 		}
 
+		response.error = jError;
 		response.events = EventArrayResponse;
 		return 0;
 	}
@@ -145,15 +147,16 @@ int Subscriber_HandleRequest(int Index, Request request, Response response)
 			Method = 3;
 
 		JSONArray EventArrayResponse = new JSONArray();
+		JSONObject jError = null;
 
 		for(int i = 0; i < EventArray.Length; i++)
 		{
 			char sEventName[32];
 			if(EventArray.GetString(i, sEventName, sizeof(sEventName)) == false)
 			{
-				JSONObject jError = new JSONObject();
-				jError.SetString("error", "not a string-value");
-				EventArrayResponse.Push(jError);
+				if (jError == null)
+					jError = new JSONObject();
+				jError.SetString("error", "Event is not a string-value");
 				continue;
 			}
 
@@ -168,6 +171,7 @@ int Subscriber_HandleRequest(int Index, Request request, Response response)
 			EventArrayResponse.PushInt(Res);
 		}
 
+		response.error = jError;
 		response.events = EventArrayResponse;
 		return 0;
 	}
@@ -299,6 +303,7 @@ static int Subscribe_GameEvents_FakePublish(int Index, const char[] sEventName, 
 
 	PublishEvent(g_Subscriber_Client[Index], jPublish);
 
+	delete jEventData;
 	delete jEvent;
 	delete jPublish;
 
