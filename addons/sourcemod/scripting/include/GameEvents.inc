@@ -75,6 +75,8 @@ static void GameEvents_OnHook(Event event, const char[] name, bool dontBroadcast
 	jEvent.Set("data", jEventData);
 
 	Subscribe_GameEvents_Publish(sEventName, jEvent);
+
+	delete jEventData;
 }
 
 int GameEvents_Hook(const char[] sEventName)
