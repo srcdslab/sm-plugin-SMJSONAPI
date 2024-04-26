@@ -90,7 +90,7 @@ public int API_GetMaxClients()
 public int API_GetUserFlagBits(int client)
 {
 	if (!IsClientConnected(client))
-		return -1;
-	else
-		return GetUserFlagBits(client);
+		return 0;
+	
+	return GetUserFlagBits(client);
 }
