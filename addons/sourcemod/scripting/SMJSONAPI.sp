@@ -267,6 +267,11 @@ stock JSONArray HandleRequestFunctionArgs(Request request, Response response)
 			jArgsArray.GetString(i, asValues[sValues], sizeof(asValues[]));
 			Call_PushStringEx(asValues[sValues++], sizeof(asValues[]), SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
 		}
+		else if(jType == JSON_OBJECT)
+		{
+			aiValues[iValues] = view_as<int>(jArgsArray.Get(i));
+			Call_PushCell(aiValues[iValues++]);
+		}
 		else
 		{
 			Call_Cancel();
@@ -355,6 +360,10 @@ stock JSONArray HandleRequestFunctionArgs(Request request, Response response)
 		else if(jType == JSON_STRING)
 		{
 			jArgsResponse.PushString(asValues[sValues++]);
+		}
+		else if(jType == JSON_OBJECT)
+		{
+			jArgsResponse.Push(view_as<JSON>(aiValues[iValues++]));
 		}
 	}
 	return jArgsResponse;
