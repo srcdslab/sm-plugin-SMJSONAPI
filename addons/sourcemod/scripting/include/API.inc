@@ -103,9 +103,15 @@ public void API_CreateMenu(int client, int data)
 	Menu menu = new Menu(API_MenuCallback);
 	
 	JSONObject dataObj = view_as<JSONObject>(data);
-	
+	RequestFrame(API_FreeHandle, data);
+
 	char title[128];
-	dataObj.GetString("title", title, sizeof(title));
+	if (!dataObj.GetString("title", title, sizeof(title)))
+	{
+		delete menu;
+		return;
+	}
+
 	menu.SetTitle(title);
 	
 	JSONArray options = view_as<JSONArray>(dataObj.Get("options"));
@@ -131,8 +137,6 @@ public void API_CreateMenu(int client, int data)
 	}
 
 	delete options;
-
-	RequestFrame(API_FreeHandle, data)
 
 	menu.ExitButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
