@@ -97,7 +97,7 @@ public int API_GetUserFlagBits(int client)
 
 public void API_CreateMenu(int client, int data)
 {
-	if (!IsClientInGame(client))
+	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
 		return;
 
 	Menu menu = new Menu(API_MenuCallback);
