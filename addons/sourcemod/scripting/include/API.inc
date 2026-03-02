@@ -110,7 +110,10 @@ public void API_CreateMenu(int client, int data)
 	
 	JSONArray options = view_as<JSONArray>(dataObj.Get("options"));
 	if (options == null)
+	{
+		delete menu;
 		return;
+	}
 	
 	for (int i = 0; i < options.Length; i++)
 	{
