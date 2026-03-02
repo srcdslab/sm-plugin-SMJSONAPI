@@ -125,11 +125,23 @@ public void API_CreateMenu(int client, int data)
 		thisArr.GetString(0, option_data, sizeof(option_data));
 		thisArr.GetString(1, option_display, sizeof(option_display));
 		
+		delete thisArr;
+
 		menu.AddItem(option_data, option_display);
 	}
 
+	delete options;
+
+	RequestFrame(API_FreeHandle, data)
+
 	menu.ExitButton = true;
 	menu.Display(client, MENU_TIME_FOREVER);
+}
+
+void API_FreeHandle(int data)
+{
+	JSONObject obj = view_as<JSONObject>(data);
+	delete obj;
 }
 
 public int API_MenuCallback(Menu menu, MenuAction action, int param1, int param2)
