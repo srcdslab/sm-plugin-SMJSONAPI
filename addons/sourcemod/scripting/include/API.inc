@@ -97,13 +97,14 @@ public int API_GetUserFlagBits(int client)
 
 public void API_CreateMenu(int client, int data)
 {
+	RequestFrame(API_FreeHandle, data);
+
 	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
 		return;
 
 	Menu menu = new Menu(API_MenuCallback);
 	
 	JSONObject dataObj = view_as<JSONObject>(data);
-	RequestFrame(API_FreeHandle, data);
 
 	char title[128];
 	if (!dataObj.GetString("title", title, sizeof(title)))
