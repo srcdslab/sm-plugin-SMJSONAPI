@@ -94,3 +94,91 @@ public int API_GetUserFlagBits(int client)
 	
 	return GetUserFlagBits(client);
 }
+
+public void API_CreateMenu(int client, int data)
+{
+	RequestFrame(API_FreeHandle, data);
+
+	if (!(1 <= client <= MaxClients) || !IsClientInGame(client))
+		return;
+
+	Menu menu = new Menu(API_MenuCallback);
+	
+	JSONObject dataObj = view_as<JSONObject>(data);
+
+	char title[128];
+	if (!dataObj.GetString("title", title, sizeof(title)))
+	{
+		delete menu;
+		return;
+	}
+
+	menu.SetTitle(title);
+	
+	JSONArray options = view_as<JSONArray>(dataObj.Get("options"));
+	if (options == null)
+	{
+		delete menu;
+		return;
+	}
+	
+	for (int i = 0; i < options.Length; i++)
+	{
+		JSONArray thisArr = view_as<JSONArray>(options.Get(i));
+		if (thisArr == null)
+			continue;
+		
+		char option_data[255], option_display[255];
+		thisArr.GetString(0, option_data, sizeof(option_data));
+		thisArr.GetString(1, option_display, sizeof(option_display));
+		
+		delete thisArr;
+
+		menu.AddItem(option_data, option_display);
+	}
+
+	delete options;
+
+	menu.ExitButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+
+void API_FreeHandle(int data)
+{
+	JSONObject obj = view_as<JSONObject>(data);
+	delete obj;
+}
+
+public int API_MenuCallback(Menu menu, MenuAction action, int param1, int param2)
+{
+	switch (action)
+	{
+		case MenuAction_End:
+			delete menu;
+		
+		case MenuAction_Select:
+		{
+			char[] sEventName = "OnMenuSelect";
+			
+			JSONObject jEvent = new JSONObject();
+			jEvent.SetString("name", sEventName);
+
+			JSONObject jEventData = new JSONObject();
+			jEventData.SetString("type", "trigger");
+			jEventData.SetInt("client", param1);
+			
+			char option[255];
+			menu.GetItem(param2, option, sizeof(option));
+			
+			jEventData.SetString("option", option);
+		
+			jEvent.Set("data", jEventData);
+			
+			Subscribe_Forwards_Publish(sEventName, jEvent);
+			
+			delete jEventData;
+		}
+	}
+	
+	return 0;
+}
