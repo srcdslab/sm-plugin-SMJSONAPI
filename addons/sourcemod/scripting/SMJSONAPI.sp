@@ -14,6 +14,8 @@
 #include "API.inc"
 #include "Subscribe.inc"
 
+#define LOCALHOST_IP "127.0.0.1"
+
 static AsyncSocket g_ServerSocket = null;
 
 static AsyncSocket g_Client_Socket[MAX_CLIENTS] = { null, ... };
@@ -22,6 +24,9 @@ static int g_Client_Subscriber[MAX_CLIENTS] = { -1, ... };
 ConVar g_ListenAddr;
 ConVar g_ListenPort;
 ConVar g_Debug;
+ConVar g_WhitelistedIPs;
+
+StringMap g_smWhitelistedIPs;
 
 public Plugin myinfo =
 {
@@ -39,6 +44,7 @@ public void OnPluginStart()
 	g_ListenAddr = CreateConVar("sm_jsonapi_addr", "127.0.0.1", "SM JSON API listen ip address", FCVAR_PROTECTED);
 	g_ListenPort = CreateConVar("sm_jsonapi_port", "27021", "SM JSON API listen ip address", FCVAR_PROTECTED, true, 1025.0, true, 65535.0);
 	g_Debug = CreateConVar("sm_jsonapi_debug", "0", "Print debug logs", FCVAR_NONE);
+	g_WhitelistedIPs = CreateConVar("sm_jsonapi_whitelisted_ips", "172.17.0.1", "Whitelisted IPs (Separated by ',' empty means only localhost can connect)", FCVAR_PROTECTED);
 
 	AutoExecConfig(true);
 }
@@ -59,10 +65,58 @@ public void OnConfigsExecuted()
 
 	g_ServerSocket.Listen(sAddr, Port);
 	LogMessage("Listening on %s:%d", sAddr, Port);
+
+	// Get whitelisted ips:
+	delete g_smWhitelistedIPs;
+
+	char sWhitelistedAddrs[256];
+	g_WhitelistedIPs.GetString(sWhitelistedAddrs, sizeof(sWhitelistedAddrs));
+
+	if (!sWhitelistedAddrs[0])
+		return;
+
+	g_smWhitelistedIPs = new StringMap();
+
+	if (StrContains(sWhitelistedAddrs, ",") == -1)
+	{
+		g_smWhitelistedIPs.SetValue(sWhitelistedAddrs, true);
+		return;		
+	}
+
+	int iAddrsCount = 0;
+	for (int i = 0; i < strlen(sWhitelistedAddrs); i++)
+	{
+		if (sWhitelistedAddrs[i] == ',')
+			iAddrsCount++;
+	}
+
+	// Impossible to happen but just to be safe.
+	if (iAddrsCount == 0)
+		return;
+
+	char[][] sWhitelistedAddrsArr = new char[++iAddrsCount][32];
+	ExplodeString(sWhitelistedAddrs, ",", sWhitelistedAddrsArr, iAddrsCount, 32);
+
+	for (int i = 0; i < iAddrsCount; i++)
+	{
+		TrimString(sWhitelistedAddrsArr[i]);
+		g_smWhitelistedIPs.SetValue(sWhitelistedAddrsArr[i], true);
+	}
 }
 
 static void OnAsyncConnect(AsyncSocket socket)
 {
+	char ip[32];
+	socket.GetClientIP(ip, sizeof(ip));
+
+	bool value;
+	if (strcmp(ip, LOCALHOST_IP) != 0 && !(g_smWhitelistedIPs && g_smWhitelistedIPs.GetValue(ip, value)))
+	{
+		LogMessage("Blocked receiving data from: %s", ip);
+		delete socket;
+		return;
+	}
+
 	int Client = GetFreeClientIndex();
 	LogMessage("OnAsyncConnect(Client=%d)", Client);
 
