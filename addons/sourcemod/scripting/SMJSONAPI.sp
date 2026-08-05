@@ -579,11 +579,15 @@ bool IsIPInCIDR(const char[] clientIp, const char[] cidrEntry)
     if (iSlashPos != -1)
     {
         strcopy(prefixBit, sizeof(prefixBit), cidrEntry[iSlashPos]);
-        iPrefixLen = StringToInt(prefixBit);
+ 		TrimString(prefixBit);
+ 		if (!prefixBit[0])
+ 			return false;
+
+ 		iPrefixLen = StringToInt(prefixBit);
     }
     else
     {
-        strcopy(rangeIp, sizeof(rangeIp), cidrEntry);
+        return strcmp(clientIp, cidrEntry) == 0;
     }
 
     if (iPrefixLen <= 0)
