@@ -80,7 +80,7 @@ public void OnConfigsExecuted()
 	if (StrContains(sWhitelistedAddrs, ",") == -1)
 	{
 		g_smWhitelistedIPs.SetValue(sWhitelistedAddrs, true);
-		return;		
+		return;
 	}
 
 	int iAddrsCount = 0;
@@ -283,7 +283,7 @@ stock JSONArray HandleRequestFunctionArgs(Request request, Response response)
 					Call_PushString(NULL_STRING);
 				else
 					Fail = true;
-				
+
 				delete jArrayValue;
 			}
 			else
@@ -570,54 +570,54 @@ static int ClientFromSocket(AsyncSocket socket)
  */
 bool IsIPInCIDR(const char[] clientIp, const char[] cidrEntry)
 {
-    char rangeIp[16];
-    char prefixBit[4];
-    
-    int iSlashPos = SplitString(cidrEntry, "/", rangeIp, sizeof(rangeIp));
-    int iPrefixLen = 32;
-    
-    if (iSlashPos != -1)
-    {
-        strcopy(prefixBit, sizeof(prefixBit), cidrEntry[iSlashPos]);
- 		TrimString(prefixBit);
- 		if (!prefixBit[0])
- 			return false;
+	char rangeIp[16];
+	char prefixBit[4];
 
- 		iPrefixLen = StringToInt(prefixBit);
-    }
-    else
-    {
-        return strcmp(clientIp, cidrEntry) == 0;
-    }
+	int iSlashPos = SplitString(cidrEntry, "/", rangeIp, sizeof(rangeIp));
+	int iPrefixLen = 32;
 
-    if (iPrefixLen <= 0)
-    	return true;
-    if (iPrefixLen > 32)
-    	iPrefixLen = 32;
+	if (iSlashPos != -1)
+	{
+		strcopy(prefixBit, sizeof(prefixBit), cidrEntry[iSlashPos]);
+		TrimString(prefixBit);
+		if (!prefixBit[0])
+			return false;
 
-    int iClientIp = IPv4ToInt(clientIp);
-    int iRangeIp  = IPv4ToInt(rangeIp);
+		iPrefixLen = StringToInt(prefixBit);
+	}
+	else
+	{
+		return strcmp(clientIp, cidrEntry) == 0;
+	}
 
-    if (iClientIp == 0 || iRangeIp == 0)
-        return false;
+	if (iPrefixLen <= 0)
+		return true;
+	if (iPrefixLen > 32)
+		iPrefixLen = 32;
 
-    int iMask = (iPrefixLen == 32) ? -1 : ~((1 << (32 - iPrefixLen)) - 1);
+	int iClientIp = IPv4ToInt(clientIp);
+	int iRangeIp  = IPv4ToInt(rangeIp);
 
-    return (iClientIp & iMask) == (iRangeIp & iMask);
+	if (iClientIp == 0 || iRangeIp == 0)
+		return false;
+
+	int iMask = (iPrefixLen == 32) ? -1 : ~((1 << (32 - iPrefixLen)) - 1);
+
+	return (iClientIp & iMask) == (iRangeIp & iMask);
 }
 
 int IPv4ToInt(const char[] ip)
 {
-    char octets[4][4];
-    if (ExplodeString(ip, ".", octets, 4, 4) != 4)
-        return 0;
+	char octets[4][4];
+	if (ExplodeString(ip, ".", octets, 4, 4) != 4)
+		return 0;
 
-    int b1 = StringToInt(octets[0]);
-    int b2 = StringToInt(octets[1]);
-    int b3 = StringToInt(octets[2]);
-    int b4 = StringToInt(octets[3]);
+	int b1 = StringToInt(octets[0]);
+	int b2 = StringToInt(octets[1]);
+	int b3 = StringToInt(octets[2]);
+	int b4 = StringToInt(octets[3]);
 
-    return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
+	return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
 }
 
 bool IsIPWhitelisted(const char[] ip)
