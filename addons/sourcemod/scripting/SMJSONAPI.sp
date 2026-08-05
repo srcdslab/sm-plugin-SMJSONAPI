@@ -624,8 +624,11 @@ bool IsIPWhitelisted(const char[] ip)
 	if (!g_smWhitelistedIPs)
 		return false;
 
-	StringMapSnapshot snapshot = g_smWhitelistedIPs.Snapshot();
+	bool value;
+	if (g_smWhitelistedIPs.GetValue(ip, value))
+		return true;
 
+	StringMapSnapshot snapshot = g_smWhitelistedIPs.Snapshot();
 	bool match = false;
 	for (int i = 0; i < snapshot.Length; i++)
 	{
