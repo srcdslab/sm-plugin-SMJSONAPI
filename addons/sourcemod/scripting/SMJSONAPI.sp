@@ -33,7 +33,7 @@ public Plugin myinfo =
 	name = "SM JSON API",
 	author = "BotoX, maxime1907",
 	description = "SourceMod TCP JSON API",
-	version = "1.2.0",
+	version = "1.2.1",
 	url = ""
 }
 
@@ -80,7 +80,7 @@ public void OnConfigsExecuted()
 	if (StrContains(sWhitelistedAddrs, ",") == -1)
 	{
 		g_smWhitelistedIPs.SetValue(sWhitelistedAddrs, true);
-		return;		
+		return;
 	}
 
 	int iAddrsCount = 0;
@@ -109,8 +109,7 @@ static void OnAsyncConnect(AsyncSocket socket)
 	char ip[32];
 	socket.GetClientIP(ip, sizeof(ip));
 
-	bool value;
-	if (strcmp(ip, LOCALHOST_IP) != 0 && !(g_smWhitelistedIPs && g_smWhitelistedIPs.GetValue(ip, value)))
+	if (!IsIPWhitelisted(ip))
 	{
 		LogMessage("Blocked receiving data from: %s", ip);
 		delete socket;
@@ -284,7 +283,7 @@ stock JSONArray HandleRequestFunctionArgs(Request request, Response response)
 					Call_PushString(NULL_STRING);
 				else
 					Fail = true;
-				
+
 				delete jArrayValue;
 			}
 			else
@@ -560,4 +559,94 @@ static int ClientFromSocket(AsyncSocket socket)
 			return i;
 	}
 	return -1;
+}
+
+/**
+ * Checks if an IP string (e.g. "172.17.0.5") matches a CIDR range or exact IP (e.g. "172.17.0.0/16" or "192.168.1.50").
+ *
+ * @param clientIp    	The incoming client IP string.
+ * @param cidrEntry   	The whitelist entry (e.g., "172.17.0.0/16" or "192.168.1.1").
+ * @return              True if the IP matches, false otherwise.
+ */
+bool IsIPInCIDR(const char[] clientIp, const char[] cidrEntry)
+{
+	char rangeIp[16];
+	char prefixBit[4];
+
+	int iSlashPos = SplitString(cidrEntry, "/", rangeIp, sizeof(rangeIp));
+	int iPrefixLen = 32;
+
+	if (iSlashPos != -1)
+	{
+		strcopy(prefixBit, sizeof(prefixBit), cidrEntry[iSlashPos]);
+		TrimString(prefixBit);
+		if (!prefixBit[0])
+			return false;
+
+		iPrefixLen = StringToInt(prefixBit);
+	}
+	else
+	{
+		return strcmp(clientIp, cidrEntry) == 0;
+	}
+
+	if (iPrefixLen <= 0)
+		return true;
+	if (iPrefixLen > 32)
+		iPrefixLen = 32;
+
+	int iClientIp = IPv4ToInt(clientIp);
+	int iRangeIp  = IPv4ToInt(rangeIp);
+
+	if (iClientIp == 0 || iRangeIp == 0)
+		return false;
+
+	int iMask = (iPrefixLen == 32) ? -1 : ~((1 << (32 - iPrefixLen)) - 1);
+
+	return (iClientIp & iMask) == (iRangeIp & iMask);
+}
+
+int IPv4ToInt(const char[] ip)
+{
+	char octets[4][4];
+	if (ExplodeString(ip, ".", octets, 4, 4) != 4)
+		return 0;
+
+	int b1 = StringToInt(octets[0]);
+	int b2 = StringToInt(octets[1]);
+	int b3 = StringToInt(octets[2]);
+	int b4 = StringToInt(octets[3]);
+
+	return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
+}
+
+bool IsIPWhitelisted(const char[] ip)
+{
+	if (strcmp(ip, LOCALHOST_IP) == 0 || strcmp(ip, "::1") == 0)
+		return true;
+
+	if (!g_smWhitelistedIPs)
+		return false;
+
+	bool value;
+	if (g_smWhitelistedIPs.GetValue(ip, value))
+		return true;
+
+	StringMapSnapshot snapshot = g_smWhitelistedIPs.Snapshot();
+	bool match = false;
+	for (int i = 0; i < snapshot.Length; i++)
+	{
+		char thisIp[32];
+		if (!snapshot.GetKey(i, thisIp, sizeof(thisIp)))
+			continue;
+
+		if (IsIPInCIDR(ip, thisIp))
+		{
+			match = true;
+			break;
+		}
+	}
+
+	delete snapshot;
+	return match;
 }
