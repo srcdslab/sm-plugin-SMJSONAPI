@@ -8,8 +8,8 @@ This repository contains **SM JSON API**, a SourcePawn plugin for SourceMod that
 ### Core Technologies
 - **Language**: SourcePawn
 - **Platform**: SourceMod 1.11+ (targeting latest stable)
-- **Build System**: **SourceKnight** (NOT traditional spcomp) - Version 0.2
-- **Dependencies**: Managed via `sourceknight.yaml`
+- **Build System**: Native GitHub Actions using `spcomp` directly
+- **Dependencies**: Cloned directly from their source repos in the CI workflow
 
 ### Key Dependencies
 - **AsyncSocket**: TCP socket communication
@@ -18,10 +18,10 @@ This repository contains **SM JSON API**, a SourcePawn plugin for SourceMod that
 - **basic**: Custom methodmap base classes
 
 ### Build Process
-- **Primary Build Tool**: SourceKnight via GitHub Actions
-- **Configuration**: `sourceknight.yaml` defines dependencies, targets, and build settings
+- **Primary Build Tool**: `spcomp` invoked directly via GitHub Actions
+- **Configuration**: `.github/workflows/ci.yml` defines dependencies, targets, and build settings
 - **Output**: Compiled plugins go to `/addons/sourcemod/plugins`
-- **CI/CD**: GitHub Actions with `maxime1907/action-sourceknight@v1`
+- **CI/CD**: GitHub Actions with `rumblefrog/setup-sp@v1.3.1` (SourceMod 1.12.x)
 
 ## Project Architecture
 
@@ -131,8 +131,8 @@ if (!jsonObject.Size)
 
 ### Build Validation
 ```bash
-# Build using SourceKnight
-sourceknight build
+# Build via GitHub Actions (spcomp) - see .github/workflows/ci.yml
+# Push or open a PR to trigger the CI build automatically
 
 # Check for compilation errors
 # Validate against SourceMod 1.11+ compatibility
@@ -190,7 +190,7 @@ sourceknight build
 ## Dependencies & Updates
 
 ### Dependency Management
-- **Update `sourceknight.yaml`** for version changes
+- **Update `.github/workflows/ci.yml`** for dependency version/source changes
 - **Test compatibility** after dependency updates
 - **Check breaking changes** in AsyncSocket, ripext APIs
 - **Validate build** after any dependency modifications
