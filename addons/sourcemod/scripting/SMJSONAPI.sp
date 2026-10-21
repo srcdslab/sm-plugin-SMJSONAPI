@@ -33,7 +33,7 @@ public Plugin myinfo =
 	name = "SM JSON API",
 	author = "BotoX, maxime1907",
 	description = "SourceMod TCP JSON API",
-	version = "1.2.1",
+	version = "1.2.2",
 	url = ""
 }
 
@@ -438,7 +438,7 @@ stock int HandleRequestFunction(Request request, Response response)
 	Format(sAPIFunction, sizeof(sAPIFunction), "API_%s", sFunction);
 
 	Function Fun = INVALID_FUNCTION;
-	Handle FunPlugin = INVALID_HANDLE;
+	Handle FunPlugin = null;
 
 	Fun = GetFunctionByName(FunPlugin, sAPIFunction);
 	if (Fun == INVALID_FUNCTION)
